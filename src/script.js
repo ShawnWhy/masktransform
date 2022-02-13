@@ -31,7 +31,7 @@ const scene = new THREE.Scene()
 const raycaster = new THREE.Raycaster()
 
 //cannon
-console.log(CANNON)
+
 const world = new CANNON.World()
 world.broadphase = new CANNON.SAPBroadphase(world)
 world.allowSleep = true
@@ -92,6 +92,8 @@ const selectMaterial = new THREE.MeshStandardMaterial({color:'pink'})
 
 
 let potGeo
+let pot
+let potMesh
 let mask2
 let mask2backup
 let mask;
@@ -100,6 +102,7 @@ let mask2backupGeo
 let maskGeo
 let maskbackupGeo
 let backupcolors
+let potColors
 const mouse = new THREE.Vector2()
 mouse.x = null
 mouse.y=null
@@ -124,7 +127,8 @@ const gltfLoader = new GLTFLoader()
 // gltfLoader.setDRACOLoader(dracoLoader)
 let colorInside2
 let colorOutside2
-
+let colorInside3
+let colorOutside3
 gltfLoader.load(
     '/mask.glb',
     (gltf) =>
@@ -140,10 +144,13 @@ gltfLoader.load(
         const colorOutside = new THREE.Color('blue')
         colorInside2 = new THREE.Color('green')
         colorOutside2 = new THREE.Color('yellow')
+     
+
+        
 for(let i = 0; i < maskGeo.length; i++)
 {
     const i3 = i * 3
-    const mixedColor = colorInside.clone()
+    const mixedColor = colorInside.clone()  
     mixedColor.lerp(colorOutside, mask.children[1].geometry.attributes.position.array[i3+1]/2+.5)
     facecolors[i3    ] = mixedColor.r
     facecolors[i3 + 1] = mixedColor.g
@@ -158,10 +165,6 @@ let pixleMaterial = new THREE.PointsMaterial({
     blending: THREE.AdditiveBlending,
     vertexColors: true
 
-
-
-
-
 })
 
 const randomColors = [new THREE.Color("orange"), new THREE.Color("yellow"), new THREE.Color( "blue"), new THREE.Color("red"), new THREE.Color("violet")]
@@ -174,8 +177,8 @@ setInterval(() => {
 
     colorOutside2 = randomColors[rand2]
 
-    console.log(colorInside2)
-    console.log(colorOutside2)
+    // console.log(colorInside2)
+    // console.log(colorOutside2)
 
     backupcolors=new Float32Array(maskGeo.length * 3)
     for(let i = 0; i < maskGeo.length; i++)
@@ -187,6 +190,28 @@ setInterval(() => {
         backupcolors[i3 + 1] = mixedColor.g
         backupcolors[i3 + 2] = mixedColor.b
     }
+}
+if(potGeo){
+        
+    let rand1 = Math.floor(Math.random()*(randomColors.length-1))
+    let rand2 = Math.floor(Math.random()*(randomColors.length-1))
+colorInside3 = randomColors[rand1]
+
+colorOutside3 = randomColors[rand2]
+
+// console.log(colorInside2)
+// console.log(colorOutside2)
+
+potColors=new Float32Array(maskGeo.length * 3)
+for(let i = 0; i < maskGeo.length; i++)
+{
+    var i3 = i * 3
+    var mixedColor = colorInside2.clone()
+    mixedColor.lerp(colorOutside2, pot.children[0].geometry.attributes.position.array[i3+1]/2+.5)
+    potColors[i3    ] = mixedColor.r
+    potColors[i3 + 1] = mixedColor.g
+    potColors[i3 + 2] = mixedColor.b
+}
 }
 }, 4000);
        
@@ -217,7 +242,7 @@ setInterval(() => {
             backupcolors[i3 + 2] = mixedColor.b
         }
         
-        console.log(backupcolors)
+        // console.log(backupcolors)
         mask2Geo.setAttribute('color', new THREE.BufferAttribute(facecolors,3))
         mask2 = new THREE.Points(mask2Geo, pixleMaterial)
         
@@ -268,7 +293,7 @@ gltfLoader.load(
         })
 
         // scene.add(mask)
-        console.log(mask2.geometry.attributes)
+        // console.log(mask2.geometry.attributes)
         mask2backupGeo = new THREE.BufferGeometry;
        
         mask2backupGeo.setAttribute(
@@ -297,12 +322,47 @@ gltfLoader.load(
     }
 )
 gltfLoader.load(
-    '/pot.glb',
+    '/pot2.glb',
     (gltf) =>
     {
-        let pot=gltf.scene
+        pot=gltf.scene
+        let potGeoPoints = pot.children[0].geometry.attributes.position.array;
 
-        potGeo = pot.children[0].geometry.attributes.position.array;
+        let pixleMaterial = new THREE.PointsMaterial({
+            color:"pink",
+            size:.03,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            vertexColors: true
+        
+        })
+        colorInside3 = new THREE.Color('violet')
+        colorOutside3= new THREE.Color('yellow')
+
+        potColors=new Float32Array(potGeoPoints.length * 3)
+        for(let i = 0; i < maskGeo.length; i++)
+        {
+            var i3 = i * 3
+            var mixedColor = colorInside3.clone()
+            mixedColor.lerp(colorOutside3, pot.children[0].geometry.attributes.position.array[i3+1]/2+.5)
+            potColors[i3    ] = mixedColor.r
+            potColors[i3 + 1] = mixedColor.g
+            potColors[i3 + 2] = mixedColor.b
+        }
+        
+        // console.log(backupcolors)
+        
+        
+        potGeo = new THREE.BufferGeometry;
+        
+        potGeo.setAttribute(
+            'position',
+            new THREE.BufferAttribute(potGeoPoints,3)
+        )
+        potGeo.setAttribute('color', new THREE.BufferAttribute(potColors,3))
+
+
+        potMesh = new THREE.Points(potGeo, pixleMaterial)
  
     }
 )
@@ -361,10 +421,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 raycaster.setFromCamera(mouse, camera)
 
-
-
-
-
+    
 
 /**
  * Animate
@@ -391,8 +448,8 @@ const tick = () =>
 {
   
     if(mask2){
-mask2.rotation.y+=.005
-mask2.rotation.x+=.005
+mask2.rotation.y+=.001
+// mask2.rotation.x+=.001
 
     }
 
@@ -411,27 +468,64 @@ mask2.rotation.x+=.005
 
     world.step(1 / 60, deltaTime, 3)
     
-    if(mask2){
+    if(mask2&&potMesh){
     
         // mask2.rotation.y+=.001
     let count = mask2.geometry.attributes.position.count
 
     for(let i=0; i<count; i++){
-    if(mask2.geometry.attributes.position.getY(i)>mouse.y*4-.65&&mask2.geometry.attributes.position.getY(i)<mouse.y*4+.65&&mask2.geometry.attributes.position.getX(i)<6){
+    // if(mask2.geometry.attributes.position.getY(i)>mouse.y*4-.65&&mask2.geometry.attributes.position.getY(i)<mouse.y*4+.65&&mask2.geometry.attributes.position.getX(i)<6){
+        if(mask2.geometry.attributes.position.getY(i)<mouse.y*4){
+
         // console.log(mouse.y)
         // console.log(mask2.geometry.attributes.position.getY(i))
         
         let Xposition = mask2.geometry.attributes.position.getX(i)+.1
-        mask2.geometry.attributes.position.setX(i, Xposition)
-        mask2.geometry.attributes.color.array[i*3]+=.05
-        mask2.geometry.attributes.color.array[i*3+1]+=.05
-        mask2.geometry.attributes.color.array[i*3+2]+=.05
+        let flow = "on"
+        if(mask2.geometry.attributes.position.getX(i)<6&&mask2.geometry.attributes.position.getX(i)!==potMesh.geometry.attributes.position.getX(i)){
+        mask2.geometry.attributes.position.setX(i, Xposition)   
+        mask2.geometry.attributes.color.array[i*3]+=.02
+        mask2.geometry.attributes.color.array[i*3+1]+=.02
+        mask2.geometry.attributes.color.array[i*3+2]+=.02
+        }
+        else if(mask2.geometry.attributes.position.getX(i)>6){
+            mask2.geometry.attributes.position.setX(i, potMesh.geometry.attributes.position.getX(i))
+            mask2.geometry.attributes.position.setY(i, potMesh.geometry.attributes.position.getY(i))
+            mask2.geometry.attributes.position.setZ(i, potMesh.geometry.attributes.position.getZ(i))
+            mask2.geometry.attributes.color.array[i*3]=potColors[i*3]
+            mask2.geometry.attributes.color.array[i*3+1]=potColors[i*3+1]
+            mask2.geometry.attributes.color.array[i*3+2]=potColors[i*3+2]
+            }
+
+            
+        
+        
+            
+
+
+
+        
         // console.log(mask2.geometry.attributes.color)
 
         
     }
     else{
+        // mask2.geometry.attributes.position.setX(i, mask2backup.geometry.attributes.position.getX(i))
+        // mask2.geometry.attributes.position.setY(i, mask2backup.geometry.attributes.position.getY(i))
+        // mask2.geometry.attributes.position.setZ(i, mask2backup.geometry.attributes.position.getZ(i))
+        // if(display=="pot"){
+        //  mask2.geometry.attributes.position.setX(i, potMesh.geometry.attributes.position.getX(i))
+        //     mask2.geometry.attributes.position.setY(i, potMesh.geometry.attributes.position.getY(i))
+        //     mask2.geometry.attributes.position.setZ(i, potMesh.geometry.attributes.position.getZ(i))
+          
+        // }
+
+        // else{
         mask2.geometry.attributes.position.setX(i, mask2backup.geometry.attributes.position.getX(i))
+        mask2.geometry.attributes.position.setY(i, mask2backup.geometry.attributes.position.getY(i))
+        mask2.geometry.attributes.position.setZ(i, mask2backup.geometry.attributes.position.getZ(i))
+
+        // }
         // if(mask2.geometry.attributes.color.array[i*3]>0){
             mask2.geometry.attributes.color.array[i*3]=backupcolors[i*3]
             mask2.geometry.attributes.color.array[i*3+1]=backupcolors[i*3+1]
@@ -450,6 +544,7 @@ mask2.geometry.attributes.position.needsUpdate = true;
 mask2backup.geometry.attributes.position.needsUpdate = true;
 mask2.geometry.attributes.color.needsUpdate=true;
 backupcolors.update=true
+potColors.update=true
 }
     
     
