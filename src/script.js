@@ -58,7 +58,8 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
 const floorShape = new CANNON.Plane()
 const floorBody = new CANNON.Body()
 floorBody.mass = 0
-let faceGeo
+
+
 floorBody.addShape(floorShape)
 floorBody.quaternion.setFromAxisAngle(
     new CANNON.Vec3(-1,0,0),
@@ -84,14 +85,13 @@ window.addEventListener('resize', () =>
 
 })
 
-
+const randomColors = [new THREE.Color("orange"), new THREE.Color("AFFF33"), new THREE.Color( "33BEFF"), new THREE.Color("3C21A9")]
 
 const selectMaterial = new THREE.MeshStandardMaterial({color:'pink'})
-const selectMaterial1 = new THREE.MeshBasicMaterial({color:'pink'})
-const selectMaterial2 = new THREE.MeshBasicMaterial({color:'#89cff0'})
-const selectMaterial3 = new THREE.MeshBasicMaterial({color:'#32CD32'})
 
 
+
+let potGeo
 let mask2
 let mask2backup
 let mask;
@@ -99,33 +99,12 @@ let mask2Geo
 let mask2backupGeo
 let maskGeo
 let maskbackupGeo
+let backupcolors
 const mouse = new THREE.Vector2()
 mouse.x = null
 mouse.y=null
 mouse.y2 = null
-// const facecolors = new Float32Array(maskGeo.length * 3)
 
-// for(let i = 0; i < maskGeo.length; i++)
-// {
-//     // ...
-
-//     colors[i3    ] = 1
-//     colors[i3 + 1] = 0
-//     colors[i3 + 2] = 0
-// }
-
-const pixleMaterial = new THREE.PointsMaterial({
-    color:"pink",
-    size:.03,
-    // depthWrite: false,
-    // blending: THREE.AdditiveBlending,
-    // vertexColors: true
-
-
-
-
-
-})
 window.addEventListener('mousemove', (event) =>
 {
     mouse.x = event.clientX / sizes.width * 2 - 1
@@ -143,9 +122,8 @@ window.addEventListener('mousemove', (event) =>
 
 const gltfLoader = new GLTFLoader()
 // gltfLoader.setDRACOLoader(dracoLoader)
-let rotation="on"
-let mixer = null
-
+let colorInside2
+let colorOutside2
 
 gltfLoader.load(
     '/mask.glb',
@@ -157,6 +135,60 @@ gltfLoader.load(
         mask=gltf.scene
 
         maskGeo = mask.children[1].geometry.attributes.position.array;
+        const facecolors = new Float32Array(maskGeo.length * 3)
+        const colorInside = new THREE.Color('red')
+        const colorOutside = new THREE.Color('blue')
+        colorInside2 = new THREE.Color('green')
+        colorOutside2 = new THREE.Color('yellow')
+for(let i = 0; i < maskGeo.length; i++)
+{
+    const i3 = i * 3
+    const mixedColor = colorInside.clone()
+    mixedColor.lerp(colorOutside, mask.children[1].geometry.attributes.position.array[i3+1]/2+.5)
+    facecolors[i3    ] = mixedColor.r
+    facecolors[i3 + 1] = mixedColor.g
+    facecolors[i3 + 2] = mixedColor.b
+}
+
+
+let pixleMaterial = new THREE.PointsMaterial({
+    color:"pink",
+    size:.03,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true
+
+
+
+
+
+})
+
+const randomColors = [new THREE.Color("orange"), new THREE.Color("yellow"), new THREE.Color( "blue"), new THREE.Color("red"), new THREE.Color("violet")]
+setInterval(() => {
+    if(mask.children){
+        
+        let rand1 = Math.floor(Math.random()*(randomColors.length-1))
+        let rand2 = Math.floor(Math.random()*(randomColors.length-1))
+    colorInside2 = randomColors[rand1]
+
+    colorOutside2 = randomColors[rand2]
+
+    console.log(colorInside2)
+    console.log(colorOutside2)
+
+    backupcolors=new Float32Array(maskGeo.length * 3)
+    for(let i = 0; i < maskGeo.length; i++)
+    {
+        var i3 = i * 3
+        var mixedColor = colorInside2.clone()
+        mixedColor.lerp(colorOutside2, mask.children[1].geometry.attributes.position.array[i3+1]/2+.5)
+        backupcolors[i3    ] = mixedColor.r
+        backupcolors[i3 + 1] = mixedColor.g
+        backupcolors[i3 + 2] = mixedColor.b
+    }
+}
+}, 4000);
        
         console.log(maskGeo)
         console.log(mask)
@@ -174,7 +206,19 @@ gltfLoader.load(
             'position',
             new THREE.BufferAttribute(maskGeo,3)
         )
-      
+        backupcolors=new Float32Array(maskGeo.length * 3)
+        for(let i = 0; i < maskGeo.length; i++)
+        {
+            var i3 = i * 3
+            var mixedColor = colorInside2.clone()
+            mixedColor.lerp(colorOutside2, mask.children[1].geometry.attributes.position.array[i3+1]/2+.5)
+            backupcolors[i3    ] = mixedColor.r
+            backupcolors[i3 + 1] = mixedColor.g
+            backupcolors[i3 + 2] = mixedColor.b
+        }
+        
+        console.log(backupcolors)
+        mask2Geo.setAttribute('color', new THREE.BufferAttribute(facecolors,3))
         mask2 = new THREE.Points(mask2Geo, pixleMaterial)
         
         mask2.scale.set(2,2,2)
@@ -215,14 +259,23 @@ gltfLoader.load(
             child.material = selectMaterial
         })
 
+        let pixleMaterial = new THREE.PointsMaterial({
+            color:"pink",
+            size:.03,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            vertexColors: true
+        })
+
         // scene.add(mask)
-        
+        console.log(mask2.geometry.attributes)
         mask2backupGeo = new THREE.BufferGeometry;
        
         mask2backupGeo.setAttribute(
             'position',
             new THREE.BufferAttribute(maskbackupGeo,3)
         )
+        
         
         mask2backup = new THREE.Points(mask2backupGeo, pixleMaterial)
         
@@ -241,6 +294,16 @@ gltfLoader.load(
 
 
 
+    }
+)
+gltfLoader.load(
+    '/pot.glb',
+    (gltf) =>
+    {
+        let pot=gltf.scene
+
+        potGeo = pot.children[0].geometry.attributes.position.array;
+ 
     }
 )
 
@@ -289,7 +352,7 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas
 })
 
-renderer.setClearColor( 'orange',.5);
+renderer.setClearColor( 'black',.5);
 
 // renderer.shadowMap.enabled = true
 // renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -311,6 +374,7 @@ let oldElapsedTime=null;
 
 const clock = new THREE.Clock()
 let previousTime = 0
+
 const tick = () =>
 
 
@@ -325,6 +389,12 @@ const tick = () =>
 
    
 {
+  
+    if(mask2){
+mask2.rotation.y+=.005
+mask2.rotation.x+=.005
+
+    }
 
 
     
@@ -340,7 +410,7 @@ const tick = () =>
     oldElapsedTime = elapsedTime
 
     world.step(1 / 60, deltaTime, 3)
-
+    
     if(mask2){
     
         // mask2.rotation.y+=.001
@@ -350,22 +420,36 @@ const tick = () =>
     if(mask2.geometry.attributes.position.getY(i)>mouse.y*4-.65&&mask2.geometry.attributes.position.getY(i)<mouse.y*4+.65&&mask2.geometry.attributes.position.getX(i)<6){
         // console.log(mouse.y)
         // console.log(mask2.geometry.attributes.position.getY(i))
+        
         let Xposition = mask2.geometry.attributes.position.getX(i)+.1
         mask2.geometry.attributes.position.setX(i, Xposition)
+        mask2.geometry.attributes.color.array[i*3]+=.05
+        mask2.geometry.attributes.color.array[i*3+1]+=.05
+        mask2.geometry.attributes.color.array[i*3+2]+=.05
+        // console.log(mask2.geometry.attributes.color)
 
         
     }
     else{
         mask2.geometry.attributes.position.setX(i, mask2backup.geometry.attributes.position.getX(i))
+        // if(mask2.geometry.attributes.color.array[i*3]>0){
+            mask2.geometry.attributes.color.array[i*3]=backupcolors[i*3]
+            mask2.geometry.attributes.color.array[i*3+1]=backupcolors[i*3+1]
+            mask2.geometry.attributes.color.array[i*3+2]=backupcolors[i*3+2]
 
+        // }
+      
     };
    
    
 }
+
+
     
 mask2.geometry.attributes.position.needsUpdate = true;
 mask2backup.geometry.attributes.position.needsUpdate = true;
-
+mask2.geometry.attributes.color.needsUpdate=true;
+backupcolors.update=true
 }
     
     
